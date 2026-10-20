@@ -1,9 +1,7 @@
-# Glassify – deploy on Vercel
-1. Upload all these files to a new GitHub repo (index.html must be in the repo root).
-2. Vercel → Add New Project → import that repo → Deploy (no build settings needed).
-3. Vercel → Project → Settings → Environment Variables:
-   - `YT_API_KEY` = your YouTube Data API v3 key
-   - `REGIONS` (optional) = `IN` or `IN,US` (each region costs 1 quota unit per refresh)
-4. Redeploy. The daily songs come from `/api/trending` (cached 24h on Vercel).
-Never put the API key in app.js / index.html.
-Add your own permanent songs in songs.json: {"id":"<YouTube video id>","t":"Title","a":"Artist","al":"Album","l":"hi"}
+# Himalaya Music
+Update: replace the old files in your GitHub repo with these (same names), commit -> Vercel redeploys by itself.
+Setup (one time):
+1. Vercel -> Settings -> Environment Variables: YT_API_KEY = your key (optional REGIONS = IN or IN,US). Redeploy.
+2. GitHub repo -> Settings -> Secrets and variables -> Actions -> New secret: YT_API_KEY = same key.
+3. GitHub repo -> Actions -> "Daily songs" -> Run workflow (fills ~2000+ songs in all languages; runs again every day).
+Never put the key inside app.js/index.html.
