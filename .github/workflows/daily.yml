@@ -1,0 +1,26 @@
+name: Daily songs
+on:
+  schedule: [{ cron: '30 0 * * *' }]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    env:
+      H: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/fetch.js
+        env:
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog.json
+          git diff --cached --quiet || (git commit -m "daily songs" && git push)
+      - name: Redeploy Vercel (optional)
+        if: env.H != ''
+        run: curl -s -X POST "$H"
