@@ -1,10 +1,16 @@
-const L={hi:'Hindi',en:'English',gu:'Gujarati',pa:'Punjabi',ta:'Tamil',te:'Telugu',bn:'Bengali',mr:'Marathi',kn:'Kannada',ml:'Malayalam'};
-const M={'🚗 Road Trip':/road|trip|safar|journey|drive|travel|musafir|highway|rasta/i,'🌙 Late Night':/night|raat|chill|lofi|lo-fi|slowed|reverb|midnight|sukoon/i,'🎉 Party':/party|dj|dance|nacho|club|remix|garba|dhol|bhangra|naach/i,'❤️ Love':/love|ishq|pyar|pyaar|dil|mohabbat|romantic|jaan|heart/i,'💔 Sad':/sad|dard|judai|bewafa|alone|akela|tanha|broken|cry/i,'💪 Workout':/gym|workout|power|energy|beast|rap|fire|attitude/i};
-const $=s=>document.querySelector(s),T=['0','15','30','60'];
-let S=null,all=[],view=[],shown=0,cur=-1,shuf=0,rep=0,P,pend,timer,ti=0;
-try{S=JSON.parse(localStorage.bn||'null')}catch(e){}
-const save=()=>localStorage.bn=JSON.stringify(S);
-function chips(el,fn){el.innerHTML='';for(const k in L){const b=document.createElement('button');b.textContent=L[k];b.className=S.langs.includes(k)?'on':'';b.onclick=()=>{const i=S.langs.indexOf(k);i<0?S.langs.push(k):S.langs.length>1&&S.langs.splice(i,1);chips(el,fn);fn()};el.append(b)}}
+onst $=s=>document.querySelector(s),L=localStorage;
+let S={user:null,langs:[],artists:[],liked:[],pls:{},users:{},...JSON.parse(L.gl||'{}')};
+if(!S.langs.length&&S.lang)S.langs=[S.lang];
+const save=()=>L.gl=JSON.stringify(S);
+const LN={hi:'Hindi',en:'English',gu:'Gujarati',pa:'Punjabi',mr:'Marathi',ta:'Tamil',te:'Telugu',bn:'Bengali',kn:'Kannada',ml:'Malayalam',bh:'Bhojpuri',har:'Haryanvi',es:'Spanish',ko:'Korean'};
+let all=[],byId={},queue=[],cur='',v='home',lb='pl',det=null,yt,ready=0,pend='',shuf=0,rep=0,errs=0,slT,slI=0;
+const H=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const th=id=>`https://i.ytimg.com/vi/${id}/mqdefault.jpg`,esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const fmt=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'),ln=c=>LN[c]||String(c).toUpperCase();
+const toast=m=>{const t=$('#ts');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)};
+const grp=(k,a)=>{const g={};a.forEach(s=>(g[s[k]]=g[s[k]]||[]).push(s));return Object.entries(g).sort((x,y)=>y[1].length-x[1].length)};
+
+// catalog = songs.json (seed) + catalog.json (filled daily by GitHub Action) + /api/trending (cached). No API calls for search/filter/etc.
 async function load(){
   all=[];
   for(const l of S.langs){try{(await(await fetch('data/'+l+'.json')).json()).forEach(s=>all.push([...s,l]))}catch(e){}}
