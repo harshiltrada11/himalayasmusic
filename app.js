@@ -1,4 +1,4 @@
-onst $=s=>document.querySelector(s),L=localStorage;
+const $=s=>document.querySelector(s),L=localStorage;
 let S={user:null,langs:[],artists:[],liked:[],pls:{},users:{},...JSON.parse(L.gl||'{}')};
 if(!S.langs.length&&S.lang)S.langs=[S.lang];
 const save=()=>L.gl=JSON.stringify(S);
