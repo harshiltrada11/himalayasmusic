@@ -1,41 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-
-<title>BeatNest</title>
-
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="BeatNest">
-
-<link rel="stylesheet" href="style.css">
-
-<!-- Vercel Analytics -->
-<script>
-  window.va = window.va || function () {
-    (window.vaq = window.vaq || []).push(arguments);
-  };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
-
-</head>
-<body>
-<main id="ob" class="ob"></main>
-<div id="app" hidden>
-<header class="glass top"><img class="hl" src="icon.svg" alt="BeatNest"><input id="q" type="search" placeholder="What do you want to listen to?"><button id="me" class="ic"></button></header>
-<div class="main"><section id="view"></section></div>
-<div id="mini" class="glass mini" hidden><img id="mi" alt=""><div><b id="mt"></b><small id="ma"></small></div><button id="mv" class="ic">⏮</button><button id="mp" class="ic pri">▶</button><button id="mx" class="ic">⏭</button></div>
-<nav class="glass tabs"><div class="logo"><img src="icon.svg" alt="">BeatNest</div><button data-v="home" class="on">Home</button><button data-v="search">Search</button><button data-v="lib">Your Library</button></nav>
-</div>
-<div id="np" class="np glass"><button id="cl" class="ic">⌄</button><div id="vid" class="vid"></div><h2 id="nt">Nothing playing</h2><p id="na"></p><input id="sk" type="range" max="1000" value="0"><small id="tm">0:00 / 0:00</small>
-<div class="ctl"><button id="sh" title="Shuffle">⇄</button><button id="pv">⏮</button><button id="pp" class="pri">▶</button><button id="nx">⏭</button><button id="rp" title="Repeat">↻</button></div>
-<div class="ctl2"><button id="sl">⏾ Sleep timer: Off</button><a id="yl" target="_blank" rel="noopener">Open on YouTube</a></div></div>
-<div id="ts" class="glass ts"></div>
-<script src="https://www.youtube.com/iframe_api"></script><script src="app.js"></script></body></html>
+<meta name="theme-color" content="#000"><title>BeatNest</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="glass"><h1>BeatNest</h1><input id="q" type="search" placeholder="Search songs or artists"></header>
+<nav id="langs"></nav>
+<main><div id="moods"></div><h2 id="title">New releases</h2><div id="list"></div><button id="more" hidden>Show more</button></main>
+<footer class="glass"><div id="yt"></div>
+<div class="np"><b id="npt">Pick a song</b><small id="npa"></small></div>
+<div class="ctl"><button id="sh">🔀</button><button id="pv">⏮</button><button id="pp">▶</button><button id="nx">⏭</button><button id="rp">🔁</button><button id="sl">😴</button></div></footer>
+<div id="ob"><div class="glass card"><h2>Welcome to BeatNest</h2><input id="nm" placeholder="Your name"><p>Pick your languages</p><div id="ol"></div><button id="go">Start listening</button></div></div>
+<script src="app.js"></script></body></html>
