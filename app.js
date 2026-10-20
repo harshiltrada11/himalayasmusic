@@ -21,7 +21,7 @@ async function load(){
 
 // onboarding
 function ob(st,m){const o=$('#ob');$('#app').hidden=true;o.hidden=false;let h='';
-  if(st=='w')h=`<div class="glass box"><h1>▲ Himalaya Music</h1><p>Music that's new every day.</p><button class="pri" data-o="signup">Sign up</button><button data-o="login">Log in</button><button data-o="guest">Continue as guest</button></div>`;
+  if(st=='w')h=`<div class="glass box"><img class="lg" src="icon.svg" alt=""><h1>BeatNest</h1><p>Music that's new every day.</p><button class="pri" data-o="signup">Sign up</button><button data-o="login">Log in</button><button data-o="guest">Continue as guest</button></div>`;
   if(st=='auth')h=`<form class="glass box" id="af"><h1>${m=='signup'?'Create account':'Welcome back'}</h1>${m=='signup'?'<input name=n placeholder="Name" required>':''}<input name=e type=email placeholder="Email" required><input name=p type=password minlength=6 placeholder="Password (6+ characters)" required><button class="pri">${m=='signup'?'Sign up':'Log in'}</button><small id="er"></small></form>`;
   if(st=='lang')h=`<div class="glass box"><h1>Which languages do you like?</h1><p>Pick one or more. We'll suggest songs in them.</p><div class="langs">${Object.entries(LN).map(([k,n])=>`<button data-lang="${k}" class="${S.langs.includes(k)?'on':''}">${n}</button>`).join('')}</div><button class="pri" data-o="lc">Continue</button></div>`;
   if(st=='art'){const b=all.filter(s=>S.langs.includes(s.l)),a=grp('a',b.length?b:all).slice(0,18);

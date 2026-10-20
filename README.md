@@ -1,4 +1,4 @@
-# Himalaya Music
+# BeatNest
 Update: replace the old files in your GitHub repo with these (same names), commit -> Vercel redeploys by itself.
 Setup (one time):
 1. Vercel -> Settings -> Environment Variables: YT_API_KEY = your key (optional REGIONS = IN or IN,US). Redeploy.
