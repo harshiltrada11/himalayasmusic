@@ -1,6 +1,6 @@
 // scripts/fetch.js
 // Daily job: YouTube se naye songs laata hai aur data/songs.json mein add karta hai.
-// Hindi + English: roz 1000 naye songs. Baaki languages: roz 100 naye songs.
+// Hindi + English: roz 100 naye songs. Baaki languages: roz 10 naye songs.
 // Node 20 mein fetch built-in hai, koi npm package nahi chahiye.
 
 const fs = require("fs");
@@ -10,15 +10,15 @@ const API_KEY = process.env.YOUTUBE_API_KEY;
 const SONGS_FILE = path.join(__dirname, "..", "data", "songs.json");
 
 // ===== SETTINGS (yahan se badlo) =====
-const HIGH_TARGET = 1000; // Hindi aur English: roz itne naye songs
-const LOW_TARGET = 100; // baaki languages: roz itne naye songs
+const HIGH_TARGET = 100; // Hindi aur English: roz itne naye songs
+const LOW_TARGET = 10; // baaki languages: roz itne naye songs
 const DAYS_BACK = 3; // pichle kitne din ke songs dekhne hain
 const QUOTA_BUDGET = 9500; // roz ka max quota (free limit 10,000)
 const MAX_SONGS = 20000; // songs.json mein max itne songs (sabse purane hat jaate hain)
 const MIN_SECONDS = 90; // isse chhote videos (Shorts) nahi
 const MAX_SECONDS = 600; // 10 minute se lambe videos nahi
 
-// Hindi aur English ke liye bahut saari queries, taaki 1000 songs mil sakein
+// Hindi aur English ke liye bahut saari queries, taaki 100 songs mil sakein
 const HIGH = [
   {
     language: "Hindi",
@@ -48,7 +48,7 @@ const HIGH = [
   },
 ];
 
-// Baaki languages (ek query kaafi hai, 100 songs = 2 pages)
+// Baaki languages (ek query kaafi hai, 10 songs = 2 pages)
 const LOW = [
   ["Gujarati", "new gujarati songs"],
   ["Punjabi", "new punjabi songs"],
