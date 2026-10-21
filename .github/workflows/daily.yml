@@ -24,5 +24,4 @@ jobs:
       - name: Redeploy Vercel (optional)
         if: env.H != ''
         run: curl -s -X POST "$H"
-        name: Redeploy vercel
-        run: curl -X POST "${{ secrets.VERCEL
+       
