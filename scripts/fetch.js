@@ -217,13 +217,29 @@ for (const [language, queryLanguage] of LANGUAGES) {
 
   report.push(`${language}: older ${old}/1`);
 }
-  } catch (err) {
-    if (!(err instanceof QuotaError)) throw err;
-    report.push(`Stopped safely: ${err.message}`);
+} catch (err) {
+  if (err instanceof QuotaError) {
+    report.push(`Quota limit reached. Saving collected songs: ${err.message}`);
+  } else {
+    console.error('Unexpected error while fetching songs:', err);
+    process.exitCode = 1;
   }
-  if (songs.length > MAX_SONGS) songs = songs.slice(-MAX_SONGS);
-  fs.mkdirSync(path.dirname(FILE), { recursive: true });
-  fs.writeFileSync(FILE, JSON.stringify(songs, null, 2));
+}
+
+// Save every song collected before the error.
+if (songs.length > MAX_SONGS) {
+  songs = songs.slice(-MAX_SONGS);
+}
+
+fs.mkdirSync(path.dirname(FILE), { recursive: true });
+fs.writeFileSync(FILE, JSON.stringify(songs, null, 2), 'utf8');
+
+console.log(report.join(' | '));
+console.log(
+  `Saved catalogue: ${songs.length} songs total; ` +
+  `${songs.length - before} net new entries; ` +
+  `estimated quota used ${quotaUsed}/${QUOTA_BUDGET}.`
+);
   console.log(report.join(' | '));
   console.log(`Done. ${songs.length - before} unique candidates added; total catalogue ${songs.length}; estimated quota used ${quotaUsed}/${QUOTA_BUDGET}.`);
   console.log(`Target per day: Hindi 100 (10 recent/90 older), English 50 (5/45), Gujarati 30 (3/27), other languages 20 (2/18). Counts are best-effort, not guaranteed.`);
