@@ -1,4 +1,3 @@
-
 name: Daily songs
 
 on:
@@ -40,4 +39,3 @@ jobs:
       - name: Redeploy Vercel
         if: env.H != ''
         run: curl -fsS -X POST "$H"
-```
