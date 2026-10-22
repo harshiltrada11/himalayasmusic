@@ -13,7 +13,7 @@ const grp=(k,a)=>{const g={};a.forEach(s=>(g[s[k]]=g[s[k]]||[]).push(s));return 
 
 // Mood playlists are generated from the current local catalog. No extra YouTube API calls.
 const MOODS=[
- {id:'party',name:'Party',emoji:'🎉',desc:'Big beats and party starters',words:['party','dance','dj','edm','club','remix','celebration','disco','upbeat']},
+ {id:'party',name:'Party',emoji:'🎉',desc:'Big beats and party starters',words:['party','dance','edm','club','celebration','disco','upbeat']},
  {id:'gym',name:'Gym',emoji:'🏋️',desc:'Power up your workout',words:['gym','workout','beast','power','motivation','strong','rock','rap','hustle','fighter','champion']},
  {id:'love',name:'Love',emoji:'❤️',desc:'Songs full of love',words:['love','ishq','pyaar','pyar','dil','jaan','mohabbat','heart','romance','tum hi','sajna','sanam']},
  {id:'bollywood',name:'Bollywood',emoji:'🎬',desc:'Hindi film favourites',words:['bollywood','hindi','film','movie','soundtrack','lyrics','official video'],language:'hi'},
@@ -29,7 +29,7 @@ const MOODS=[
  {id:'devotional',name:'Devotional',emoji:'🙏',desc:'Bhajans and spiritual music',words:['bhajan','devotional','mantra','aarti','krishna','bhakti','ram','shreenathji','shiv','hanuman','prayer']},
  {id:'lofi',name:'Lo-fi',emoji:'🎧',desc:'Laid-back beats and slowed tracks',words:['lofi','lo-fi','lo fi','slowed','reverb','chill beats','study beats','beats to relax']},
  {id:'focus',name:'Focus',emoji:'🧠',desc:'Music for reading and concentration',words:['focus','instrumental','piano','classical','ambient','study','concentration','background music','flute']},
- {id:'dance',name:'Dance',emoji:'💃',desc:'Move to the beat',words:['dance','edm','dj','remix','beat','club','disco','bhangra','dance mix']},
+ {id:'dance',name:'Dance',emoji:'💃',desc:'Move to the beat',words:['dance','edm','beat','club','disco','bhangra']},
  {id:'indie',name:'Indie',emoji:'🎸',desc:'Independent and alternative sounds',words:['indie','independent','alternative','singer songwriter','acoustic','indie pop','indie rock']},
  {id:'classical',name:'Classical',emoji:'🎻',desc:'Instrumental and classical sounds',words:['classical','instrumental','raga','raag','sitar','flute','orchestra','piano solo','violin']},
  {id:'punjabi',name:'Punjabi',emoji:'🪘',desc:'Punjabi hits and bhangra',words:['punjabi','bhangra','giddha'],language:'pa'}
@@ -45,7 +45,7 @@ function moodSongs(id){
    if(id==='pop'&&['en','ko','ja'].includes(s.l))score+=2;
    return {s,i,score};
  }).sort((a,b)=>b.score-a.score||a.i-b.i);
- // Keep each mix fresh and at 25 tracks when at least 25 unique songs exist in the catalog.
+ // Every mood playlist shows 25 unique tracks whenever the overall catalog has at least 25 songs. Matching tracks rank first; the rest safely fill the list.
  const picked=scored.filter(x=>x.score>0).map(x=>x.s);
  for(const s of scored.map(x=>x.s))if(picked.length<25&&!picked.some(x=>x.id===s.id))picked.push(s);
  return picked.slice(0,Math.min(25,all.length));

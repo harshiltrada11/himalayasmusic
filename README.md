@@ -1,24 +1,27 @@
-# BeatNest workflow update
+# BeatNest
 
-## Daily mixed catalogue
-The `Daily songs and historical mix` GitHub Actions workflow runs daily at 1:00 PM India Standard Time (cron `30 7 * * *`, UTC). GitHub may delay scheduled runs.
+## Update the existing GitHub repository
+Upload/replace these project files in your repository. Do not delete `songs.json`; it is the starter catalogue. The website reads both `songs.json` and `catalog.json`.
 
-Daily best-effort targets:
-- Hindi: 100 additions (10 recent-upload candidates + 90 older/historical candidates)
-- English: 50 additions (5 recent-upload candidates + 45 older/historical candidates)
-- Gujarati: 30 additions (3 recent-upload candidates + 27 older/historical candidates)
-- Other languages: 20 total additions (2 recent-upload candidates + 18 older/historical candidates, rotating across configured languages)
+## YouTube API setup
+1. In GitHub: Settings → Secrets and variables → Actions → add `YOUTUBE_API_KEY`.
+2. Keep the key secret; never place it in `app.js` or `index.html`.
+3. In Actions, run **Historical song backfill** once. It attempts up to 100 Hindi, 50 English, 30 Gujarati, and 20 songs across other languages, within an 8,000-unit safety budget. Actual counts depend on YouTube results, duplicate checks, availability, and filtering.
+4. **Daily songs** runs around 12:00 AM India time and continues finding recent uploads. GitHub schedule start times can be delayed.
 
-This is a 1:9 recent-to-older target ratio. Actual additions may be lower because of duplicate filtering, search results, video availability, API quota, or YouTube restrictions. The daily script writes to `catalog.json` and attempts to avoid duplicates using video IDs and normalized title/artist.
+## Historical-song caveat
+YouTube search results are candidate videos. Search phrases bias results toward classic/older music but do not prove the original song release year. Entries from the backfill are marked `catalogType: historical-candidate`; check dates/source details when exact release year matters.
 
-## Release-age limitation
-The script searches for phrases related to 1 month, 2 months, 6 months, 1 year, 2 years, 3 years, 5 years, 10 years, 15 years, 20 years, 40 years and 50 years ago. However, YouTube Data API's published timestamp is the video upload date, not a reliable official song-release date. `releaseEra` is a search hint, not a verified release date. Check official sources if exact song release ages matter.
+## Quality filtering
+The fetcher rejects common low-quality edits such as DJ remix, bass-boosted, 8D, nightcore, sped-up, slowed/reverb, bootleg and mashup titles. Official-looking title/channel metadata is only a signal, not proof of an official upload.
 
-## Existing Historical song backfill
-Keep `.github/workflows/backfill.yml` manual (`workflow_dispatch`) for an optional one-time initial historical fill. Do not schedule it daily: the daily script now includes historical candidates and runs against the same catalogue.
+## Mood playlists
+The Mood tab is included in navigation. Mood mixes are generated locally without extra YouTube API quota and show up to 25 unique tracks each once at least 25 songs are available in the combined catalogue.
 
-## Secret
-In GitHub, go to Settings → Secrets and variables → Actions and ensure `YOUTUBE_API_KEY` exists. Keep the API key secret; do not put it in frontend files.
 
-## Quota
-YouTube Data API search requests cost 100 units each. The daily script has a 9,000-unit safety budget, but it cannot bypass YouTube's daily quota. A successful workflow can add fewer songs than the targets.
+## Privacy and YouTube API compliance pages
+- `privacy.html`, `terms.html`, `data-deletion.html`, and `contact.html` are linked in the homepage footer.
+- **Before deployment, replace every `REPLACE-WITH-YOUR-CONTACT-EMAIL` placeholder with a real email address you control.** Verify that the descriptions match the deployed site and update the policy if the data practices change.
+- After deployment, use the full public URLs for `privacy.html` and the homepage in the YouTube API form.
+- Capture the requested screenshots only after the live site shows these pages and the footer. The YouTube-style play mark and text are a simple indicator, not an official endorsement or affiliation.
+- Do not claim the quota request is approved until Google confirms it.
