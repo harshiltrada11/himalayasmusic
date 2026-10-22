@@ -202,18 +202,21 @@ async function main() {
       const old = await collectHistorical(cfg.language, cfg.total - cfg.recent, songs, ids, keys, day % ERA_BUCKETS.length);
       report.push(`${cfg.language}: recent ${recent}/${cfg.recent}, older ${old}/${cfg.total - cfg.recent}`);
     }
-    // Rotate through other languages daily. 5 languages x 4 songs = 20 total target.
-    const start = (day * 5) % LANGUAGES.length;
-    const dailyLanguages = Array.from({ length: 5 }, (_, i) => LANGUAGES[(start + i) % LANGUAGES.length]);
-    for (let i = 0; i < dailyLanguages.length; i++) {
-      const [language, queryLanguage] = dailyLanguages[i];
-      const recentTarget = i < 2 ? 1 : 0;
-      const oldTarget = 4 - recentTarget;
-      let recent = 0;
-      if (recentTarget) recent = await collectRecent(language, recentTarget, songs, ids, keys, queryLanguage);
-      const old = await collectHistorical(language, oldTarget, songs, ids, keys, (day + i) % ERA_BUCKETS.length, queryLanguage);
-      report.push(`${language}: recent ${recent}/${recentTarget}, older ${old}/${oldTarget}`);
-    }
+   // Process EVERY configured other language daily.
+// Target: 1 unique historical song per language.
+for (const [language, queryLanguage] of LANGUAGES) {
+  const old = await collectHistorical(
+    language,
+    1,
+    songs,
+    ids,
+    keys,
+    day % ERA_BUCKETS.length,
+    queryLanguage
+  );
+
+  report.push(`${language}: older ${old}/1`);
+}
   } catch (err) {
     if (!(err instanceof QuotaError)) throw err;
     report.push(`Stopped safely: ${err.message}`);
