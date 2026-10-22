@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 
 const API_KEY = process.env.YOUTUBE_API_KEY;
-const SONGS_FILE = path.join(__dirname, "..", "data", "catalog.json");
+const SONGS_FILE = path.join(__dirname, "..","catalog.json");
 
 // ===== SETTINGS (yahan se badlo) =====
 const HIGH_TARGET = 100; // Hindi aur English: roz itne naye songs
