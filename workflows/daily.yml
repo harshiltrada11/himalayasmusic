@@ -1,0 +1,31 @@
+name: Daily songs and historical mix
+on:
+  schedule:
+    - cron: '30 7 * * *' # 07:30 UTC = 13:00 IST
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    env:
+      H: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Discover recent and older songs (1:9 mix)
+        run: node scripts/fetch.js
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          QUOTA_BUDGET: 9000
+      - name: Save catalogue changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add catalog.json
+          git diff --cached --quiet || (git commit -m "daily recent and historical song mix" && git push)
+      - name: Redeploy Vercel
+        if: env.H != ''
+        run: curl -fsS -X POST "$H"
