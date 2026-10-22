@@ -2,22 +2,134 @@ const $=s=>document.querySelector(s),L=localStorage;
 let S={user:null,langs:[],artists:[],liked:[],pls:{},users:{},...JSON.parse(L.gl||'{}')};
 if(!S.langs.length&&S.lang)S.langs=[S.lang];
 const save=()=>L.gl=JSON.stringify(S);
-const LN={hi:'Hindi',en:'English',gu:'Gujarati',pa:'Punjabi',mr:'Marathi',ta:'Tamil',te:'Telugu',bn:'Bengali',kn:'Kannada',ml:'Malayalam',bh:'Bhojpuri',har:'Haryanvi',es:'Spanish',ko:'Korean'};
+const LN = {
+  hi: "Hindi",
+  en: "English",
+  gu: "Gujarati",
+  pa: "Punjabi",
+  mr: "Marathi",
+  ta: "Tamil",
+  te: "Telugu",
+  bn: "Bengali",
+  kn: "Kannada",
+  ml: "Malayalam",
+  bh: "Bhojpuri",
+  har: "Haryanvi",
+  raj: "Rajasthani",
+  ur: "Urdu",
+  ne: "Nepali",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  ko: "Korean",
+  ja: "Japanese",
+  zh: "Chinese",
+  ar: "Arabic",
+  tr: "Turkish",
+  ru: "Russian",
+  id: "Indonesian",
+  th: "Thai",
+  vi: "Vietnamese",
+  fil: "Filipino",
+  fa: "Persian",
+  pl: "Polish",
+  nl: "Dutch",
+  el: "Greek",
+  sw: "Swahili",
+  other: "Other Languages"
+};
 let all=[],byId={},queue=[],cur='',v='home',lb='pl',det=null,yt,ready=0,pend='',shuf=0,rep=0,errs=0,slT,slI=0;
 const H=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 const th=id=>`https://i.ytimg.com/vi/${id}/mqdefault.jpg`,esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const fmt=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'),ln=c=>LN[c]||String(c).toUpperCase();
 const toast=m=>{const t=$('#ts');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)};
-const grp=(k,a)=>{const g={};a.forEach(s=>(g[s[k]]=g[s[k]]||[]).push(s));return Object.entries(g).sort((x,y)=>y[1].length-x[1].length)};
+const LANGUAGE_CODES = Object.fromEntries(
+  Object.entries(LN).map(([code, name]) => [
+    name.toLowerCase(),
+    code
+  ])
+);
 
+function normalizeSong(s) {
+  const rawLanguage = String(s.l ?? s.language ?? "")
+    .trim()
+    .toLowerCase();
+
+  const languageCode =
+    LN[rawLanguage] ? rawLanguage :
+    LANGUAGE_CODES[rawLanguage] ||
+    ({
+      "haryanvi": "har",
+      "rajasthani": "raj",
+      "filipino": "fil",
+      "mandarin": "zh",
+      "chinese (mandarin)": "zh"
+    })[rawLanguage] ||
+    "other";
+
+  return {
+    ...s,
+    id: s.id || s.videoId,
+    t: s.t || s.title || "",
+    a: s.a || s.artist || s.channelTitle || "Unknown Artist",
+    al: s.al || s.album || "",
+    l: languageCode,
+    d: s.d || s.addedAt || ""
+  };
+}
 // catalog = songs.json (seed) + catalog.json (filled daily by GitHub Action) + /api/trending (cached). No API calls for search/filter/etc.
-async function load(){
- if(location.protocol=='file:')alert('Open the site from your Vercel link (or a local server). YouTube will not play from a file.');
-  const j=async u=>{try{return await(await fetch(u)).json()}catch{return null}};
-  const [a,c,t]=await Promise.all([j('songs.json'),j('catalog.json'),j('/api/trending')]),m=new Map();
-  [...(c||[]),...(t?.items||[]).map(x=>({...x,al:'Trending · '+t.date,d:t.date})),...(a||[])].forEach(s=>{if(s.id&&!m.has(s.id))m.set(s.id,s)});
-  all=[...m.values()].sort((x,y)=>(y.d||'').localeCompare(x.d||''));byId={};all.forEach(s=>byId[s.id]=s);
-  S.user?next():ob('w')}
+async function load() {
+  if (location.protocol === "file:") {
+    alert("Open the site from your Vercel link (or a local server). YouTube will not play from a file.");
+  }
+
+  const j = async (url) => {
+    try {
+      return await (await fetch(url)).json();
+    } catch {
+      return null;
+    }
+  };
+
+  const [seed, catalog, trending] = await Promise.all([
+    j("songs.json"),
+    j("catalog.json"),
+    j("/api/trending")
+  ]);
+
+  const map = new Map();
+
+  [
+    ...(Array.isArray(catalog) ? catalog : []),
+    ...((trending?.items || []).map(song => ({
+      ...song,
+      d: trending.date
+    }))),
+    ...(Array.isArray(seed) ? seed : [])
+  ]
+    .map(normalizeSong)
+    .filter(song => song.id)
+    .forEach(song => {
+      if (!map.has(song.id)) map.set(song.id, song);
+    });
+
+  all = [...map.values()].sort(
+    (a, b) => (b.d || "").localeCompare(a.d || "")
+  );
+
+  byId = {};
+  all.forEach(song => {
+    byId[song.id] = song;
+  });
+
+  if (S.user) {
+    next();
+  } else {
+    ob("w");
+  }
+}
 
 // onboarding
 function ob(st,m){const o=$('#ob');$('#app').hidden=true;o.hidden=false;let h='';
