@@ -2,7 +2,7 @@ name: Daily songs
 
 on:
   schedule:
-    - cron: '30 07 * * *'
+    - cron: '30 18 * * *'
   workflow_dispatch:
 
 permissions:
