@@ -32,7 +32,8 @@ const MOODS=[
  {id:'dance',name:'Dance',emoji:'💃',desc:'Move to the beat',words:['dance','edm','beat','club','disco','bhangra']},
  {id:'indie',name:'Indie',emoji:'🎸',desc:'Independent and alternative sounds',words:['indie','independent','alternative','singer songwriter','acoustic','indie pop','indie rock']},
  {id:'classical',name:'Classical',emoji:'🎻',desc:'Instrumental and classical sounds',words:['classical','instrumental','raga','raag','sitar','flute','orchestra','piano solo','violin']},
- {id:'punjabi',name:'Punjabi',emoji:'🪘',desc:'Punjabi hits and bhangra',words:['punjabi','bhangra','giddha'],language:'pa'}
+ {id:'punjabi',name:'Punjabi',emoji:'🪘',desc:'Punjabi hits and bhangra',words:['punjabi','bhangra','giddha'],language:'pa'},
+ {id:'brazilian-phonk',name:'Brazilian Phonk',emoji:'🇧🇷',desc:'Brazilian phonk: classics, trending tracks and new releases',words:['brazilian phonk','phonk','funk brasileiro','funk br'],language:'Brazilian Phonk'}
 ];
 const moodFor=id=>MOODS.find(m=>m.id===id);
 function moodSongs(id){
@@ -64,7 +65,12 @@ async function load(){
   const [seed,catalog,trending]=await Promise.all([j('songs.json'),j('catalog.json'),j('/api/trending')]);
   const items=[...(Array.isArray(catalog)?catalog:[]),...((trending?.items||[]).map(x=>({...x,d:x.d||trending.date||''}))),...(Array.isArray(seed)?seed:[])];
   const m=new Map();
-  items.map(normalizeSong).forEach(song=>{if(song.id&&!m.has(song.id))m.set(song.id,song)});
+  const officialHindi=/t-series|zee music|sony music india|saregama|tips official|jio studios|yrf|yash raj films|panorama music|times music|aditya music|lahari music|think music|speed records|white hill music|desi melodies|gem tunes|hitz music|universal music india|venus music/i;
+  const charts=/\btop\s*(?:10|20|40|50|100)\b|\b(?:top|best)\s+\d+\s+(?:songs|hits|music)|weekly chart|singles chart|new music friday/i;
+  items.map(normalizeSong).forEach(song=>{if(!song.id||m.has(song.id))return;
+    const title=String(song.t||''); if(charts.test(title))return;
+    if(['hi','Hindi'].includes(song.l)&&!officialHindi.test(String(song.a||'')))return;
+    m.set(song.id,song)});
   all=[...m.values()].sort((x,y)=>String(y.d||'').localeCompare(String(x.d||'')));
   byId={};all.forEach(song=>byId[song.id]=song);
   S.user?next():ob('w');
@@ -75,8 +81,12 @@ function ob(st,m){const o=$('#ob');$('#app').hidden=true;o.hidden=false;let h=''
   if(st=='w')h=`<div class="glass box"><img class="lg" src="icon.svg" alt=""><h1>BeatNest</h1><p>Music that's new every day.</p><button class="pri" data-o="signup">Sign up</button><button data-o="login">Log in</button><button data-o="guest">Continue as guest</button></div>`;
   if(st=='auth')h=`<form class="glass box" id="af"><h1>${m=='signup'?'Create account':'Welcome back'}</h1>${m=='signup'?'<input name=n placeholder="Name" required>':''}<input name=e type=email placeholder="Email" required><input name=p type=password minlength=6 placeholder="Password (6+ characters)" required><button class="pri">${m=='signup'?'Sign up':'Log in'}</button><small id="er"></small></form>`;
   if(st=='lang')h=`<div class="glass box"><h1>Which languages do you like?</h1><p>Pick one or more. We'll suggest songs in them.</p><div class="langs">${Object.entries(LN).map(([k,n])=>`<button data-lang="${k}" class="${S.langs.includes(k)?'on':''}">${n}</button>`).join('')}</div><button class="pri" data-o="lc">Continue</button></div>`;
-  if(st=='art'){const b=all.filter(s=>S.langs.includes(s.l)),a=grp('a',b.length?b:all).slice(0,18);
-    h=`<div class="glass box"><h1>Pick your favourite artists</h1><div class="pick">${a.map(([n,l])=>`<div class="c rd ${S.artists.includes(n)?'on':''}" data-art="${esc(n)}"><img src="${th(l[0].id)}" alt=""><b>${esc(n)}</b></div>`).join('')}</div><button class="pri" data-o="done">Done</button></div>`}
+  if(st=='art'){const featured=[
+      ['Arijit Singh','hi'],['Shreya Ghoshal','hi'],['A.R. Rahman','hi'],['Pritam','hi'],['Sonu Nigam','hi'],['Neha Kakkar','hi'],['Badshah','hi'],['Diljit Dosanjh','hi'],['Atif Aslam','hi'],
+      ['Taylor Swift','en'],['The Weeknd','en'],['Ed Sheeran','en'],['Billie Eilish','en'],['Bruno Mars','en'],['Dua Lipa','en'],['Justin Bieber','en'],['Ariana Grande','en'],
+      ['Aditya Gadhvi','gu'],['Kirtidan Gadhvi','gu'],['Geeta Rabari','gu'],['Osman Mir','gu'],['Kinjal Dave','gu'],['Parthiv Gohil','gu']
+    ];const a=featured.filter(x=>S.langs.includes(x[1])).map(([n])=>[n,all.filter(s=>s.a.toLowerCase().includes(n.toLowerCase())).slice(0,1)]).map(([n,l])=>[n,l.length?l:[all.find(s=>S.langs.includes(s.l))||all[0]].filter(Boolean)]);const fallback=grp('a',all.filter(s=>S.langs.includes(s.l))).slice(0,18);const picks=a.length?a:fallback;
+    h=`<div class="glass box"><h1>Pick your favourite artists</h1><div class="pick">${picks.map(([n,l])=>`<div class="c rd ${S.artists.includes(n)?'on':''}" data-art="${esc(n)}"><img src="${th(l[0].id)}" alt=""><b>${esc(n)}</b></div>`).join('')}</div><button class="pri" data-o="done">Done</button></div>`}
   o.innerHTML=h}
 function next(){!S.langs.length?ob('lang'):!S.artists.length?ob('art'):start()}
 function start(){$('#ob').hidden=true;$('#app').hidden=false;$('#me').textContent=(S.user.n||'G')[0].toUpperCase();render()}
@@ -89,10 +99,10 @@ document.addEventListener('submit',async e=>{if(e.target.id!='af')return;e.preve
 // views (all client-side)
 const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button><button data-a="${s.id}" aria-label="Add to playlist">＋</button></div>`;
 const rows=l=>l.length?`<div class="list">${l.map(row).join('')}</div>`:'<p>Nothing here yet.</p>';
-const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small></div>`;
+const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small><button data-a="${s.id}" aria-label="Add to playlist">＋ Add</button></div>`;
 const gc=(k,n,l,r)=>`<div class="c ${r?'rd':''}" data-g="${k}" data-n="${esc(n)}"><img src="${th(l[0].id)}" loading="lazy" alt=""><b>${esc(n)}</b><small>${l.length} songs</small></div>`;
 const shelf=(t,l,f)=>l.length?`<h2>${t}</h2><div class="shelf">${l.map(f||card).join('')}</div>`:'';
-function render(){let h='';const mine=all.filter(s=>S.langs.includes(s.l)||S.artists.includes(s.a)),hr=new Date().getHours();
+function render(){let h='';const mine=all.filter(s=>['hi','en','Hindi','English'].includes(s.l)||S.artists.includes(s.a)),hr=new Date().getHours();
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   if(det){const l=det.k=='pl'?(S.pls[det.n]||[]).map(i=>byId[i]).filter(Boolean):det.k=='mood'?moodSongs(det.n):all.filter(s=>s[det.k]==det.n);
     const mood=det.k=='mood'?moodFor(det.n):null;
@@ -145,7 +155,7 @@ function play(id,q){if(q)queue=q;const s=byId[id];if(!s)return;cur=id;
   if(!yt){if(!window.YT||!YT.Player)return toast('Player is loading, tap the song again');
     const f=document.createElement('iframe');f.allow='autoplay; encrypted-media; picture-in-picture';
     f.src=`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1&playsinline=1&controls=0&rel=0&origin=${encodeURIComponent(location.origin)}`;$('#vid').append(f);
-    yt=new YT.Player(f,{events:{onReady(){ready=1;if(pend&&pend!=id){yt.loadVideoById(pend)}pend=''},onStateChange,onError}});$('#np').classList.add('open')}
+    yt=new YT.Player(f,{events:{onReady(){ready=1;yt.setVolume(Number($('#vol')?.value||70));if(pend&&pend!=id){yt.loadVideoById(pend)}pend=''},onStateChange,onError}});$('#np').classList.add('open')}
   else if(ready)yt.loadVideoById(id);else pend=id;
   if('mediaSession'in navigator){const M=navigator.mediaSession;M.metadata=new MediaMetadata({title:s.t,artist:s.a,artwork:[{src:th(id)}]});
     M.setActionHandler('previoustrack',()=>step(-1));M.setActionHandler('nexttrack',()=>step(1));M.setActionHandler('play',tog);M.setActionHandler('pause',tog)}}
@@ -161,5 +171,6 @@ $('#sl').onclick=()=>{slI=(slI+1)%4;clearTimeout(slT);const m=[0,15,30,60][slI];
   if(m)slT=setTimeout(()=>{yt&&yt.pauseVideo();slI=0;$('#sl').textContent='⏾ Sleep timer: Off';toast('Sleep timer: music stopped')},m*6e4)};
 $('#mini').onclick=()=>$('#np').classList.add('open');$('#cl').onclick=()=>$('#np').classList.remove('open');
 $('#sk').oninput=e=>ready&&yt.seekTo(e.target.value/1000*yt.getDuration(),true);
+$('#vol').oninput=e=>{if(ready&&yt.setVolume)yt.setVolume(Number(e.target.value));};
 setInterval(()=>{if(!ready||!yt.getDuration)return;const d=yt.getDuration()||0,c=yt.getCurrentTime()||0;$('#sk').value=d?c/d*1000:0;$('#tm').textContent=fmt(c)+' / '+fmt(d)},500);
 load();

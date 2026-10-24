@@ -57,3 +57,4 @@ input[type=range]{padding:0;height:6px;accent-color:var(--a)}
 .legal-page .back{display:inline-block;margin-top:24px;color:var(--a)}.legal-page .delete-button{background:#d83232;color:#fff;border-radius:10px;padding:12px 16px;margin-top:12px}
 .legal-page .delete-status{min-height:24px;margin-top:10px;color:#b7f7c8}
 @media(min-width:900px){.legal-footer{margin-top:55px}.legal-page{padding-top:45px}}
+\n.volume-control{display:inline-flex;align-items:center;gap:7px;color:#ddd}.volume-control input{width:100px;padding:0;accent-color:var(--a);cursor:pointer}\n@media(max-width:600px){.volume-control input{width:70px}}\n

@@ -25,3 +25,12 @@ The Mood tab is included in navigation. Mood mixes are generated locally without
 - After deployment, use the full public URLs for `privacy.html` and the homepage in the YouTube API form.
 - Capture the requested screenshots only after the live site shows these pages and the footer. The YouTube-style play mark and text are a simple indicator, not an official endorsement or affiliation.
 - Do not claim the quota request is approved until Google confirms it.
+
+## BeatNest UI updates
+- Hindi catalogue entries are shown only when the channel/artist metadata matches a configured official label/channel allowlist. This is a metadata heuristic, not a guarantee; review results before publishing.
+- General chart-compilation titles such as Top 10/Top 50/Top 100 are filtered from the song catalogue UI.
+- Made for You and Daily Mix use Hindi and English tracks only.
+- Brazilian Phonk discovery targets 10 new candidates per daily run: 5 popular/relevant candidates from the last five years, 3 current-trend candidates, and 2 newly uploaded candidates. YouTube does not guarantee popularity or release-date accuracy, so these are search-based candidates, not verified rankings.
+- Brazilian Phonk mood page shows all matching catalogue tracks rather than the standard 25-track mood limit.
+- The player includes a volume slider; playlist-add controls are available on track rows and cards.
+- Daily workflow schedule is set to 00:00 India time (GitHub Actions may start late).
