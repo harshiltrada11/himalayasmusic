@@ -106,9 +106,9 @@ document.addEventListener('submit',async e=>{if(e.target.id!='af')return;e.preve
   S.user={e:f.e,n:S.users[f.e].n};save();next()});
 
 // views (all client-side)
-const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button><button data-a="${s.id}" aria-label="Add to playlist" title="Add to playlist">＋</button><button data-share="${s.id}" aria-label="Share song" title="Share song">↗</button></div>`;
+const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button></div>`;
 const rows=l=>l.length?`<div class="list">${l.map(row).join('')}</div>`:'<p>Nothing here yet.</p>';
-const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small><div class="song-actions"><button data-a="${s.id}" aria-label="Add to playlist">＋ Add</button><button data-share="${s.id}" aria-label="Share song" title="Share song">↗ Share</button></div></div>`;
+const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small></div>`;
 const gc=(k,n,l,r)=>`<div class="c ${r?'rd':''}" data-g="${k}" data-n="${esc(n)}"><img src="${th(l[0].id)}" loading="lazy" alt=""><b>${esc(n)}</b><small>${l.length} songs</small></div>`;
 const shelf=(t,l,f)=>l.length?`<h2>${t}</h2><div class="shelf">${l.map(f||card).join('')}</div>`:'';
 function render(){let h='';const mine=all.filter(s=>['hi','en'].includes(s.l)),hr=new Date().getHours();
@@ -219,6 +219,8 @@ $('#sl').onclick=()=>{slI=(slI+1)%4;clearTimeout(slT);const m=[0,15,30,60][slI];
 $('#mini').onclick=()=>$('#np').classList.add('open');$('#cl').onclick=()=>$('#np').classList.remove('open');
 $('#sk').oninput=e=>ready&&yt.seekTo(e.target.value/1000*yt.getDuration(),true);
 $('#vol').oninput=e=>{if(ready&&yt.setVolume)yt.setVolume(Number(e.target.value));};
+$('#share-current').onclick=e=>{e.stopPropagation();if(!cur)return toast('Play a song first');showShare(cur)};
+
 $('#add-current').onclick=e=>{e.stopPropagation();if(!cur)return toast('Play a song first');const n=prompt('Add current song to playlist (enter an existing name or a new name):',Object.keys(S.pls)[0]||'My Playlist');if(n&&n.trim()){const name=n.trim();S.pls[name]=S.pls[name]||[];if(!S.pls[name].includes(cur))S.pls[name].push(cur);save();toast('Added to '+name)}};
 setInterval(()=>{if(!ready||!yt.getDuration)return;const d=yt.getDuration()||0,c=yt.getCurrentTime()||0;$('#sk').value=d?c/d*1000:0;$('#tm').textContent=fmt(c)+' / '+fmt(d)},500);
 load();
