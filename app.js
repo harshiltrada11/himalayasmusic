@@ -69,7 +69,9 @@ async function load(){
   const charts=/\btop\s*(?:10|20|40|50|100)\b|\b(?:top|best)\s+\d+\s+(?:songs|hits|music)|weekly chart|singles chart|new music friday/i;
   items.map(normalizeSong).forEach(song=>{if(!song.id||m.has(song.id))return;
     const title=String(song.t||''); if(charts.test(title))return;
-    if(['hi','Hindi'].includes(song.l)&&!officialHindi.test(String(song.a||'')))return;
+    // Keep the existing catalogue intact; official-label preference is applied below rather than
+    // deleting every Hindi entry when its channel metadata uses an unexpected format.
+    song.officialLabel=officialHindi.test(String(song.a||''));
     m.set(song.id,song)});
   all=[...m.values()].sort((x,y)=>String(y.d||'').localeCompare(String(x.d||'')));
   byId={};all.forEach(song=>byId[song.id]=song);

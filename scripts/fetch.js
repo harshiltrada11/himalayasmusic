@@ -236,4 +236,3 @@ async function main() {
   console.log(`Date caveat: YouTube API exposes video upload date, not reliably the original song release date. releaseEra is a search hint, not a verified age.`);
 }
 main().catch(err => { console.error(err); process.exit(1); });
-
