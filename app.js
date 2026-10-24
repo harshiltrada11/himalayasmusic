@@ -33,11 +33,20 @@ const MOODS=[
  {id:'indie',name:'Indie',emoji:'🎸',desc:'Independent and alternative sounds',words:['indie','independent','alternative','singer songwriter','acoustic','indie pop','indie rock']},
  {id:'classical',name:'Classical',emoji:'🎻',desc:'Instrumental and classical sounds',words:['classical','instrumental','raga','raag','sitar','flute','orchestra','piano solo','violin']},
  {id:'punjabi',name:'Punjabi',emoji:'🪘',desc:'Punjabi hits and bhangra',words:['punjabi','bhangra','giddha'],language:'pa'},
- {id:'brazilian-phonk',name:'Brazilian Phonk',emoji:'🇧🇷',desc:'Brazilian phonk: classics, trending tracks and new releases',words:['brazilian phonk','phonk','funk brasileiro','funk br'],language:'Brazilian Phonk'}
+ {id:'brazilian-phonk',name:'Brazilian Phonk',emoji:'🇧🇷',desc:'Brazilian Phonk only',words:['brazilian phonk','funk brasileiro','montagem'],language:'Brazilian Phonk'}
 ];
 const moodFor=id=>MOODS.find(m=>m.id===id);
 function moodSongs(id){
  const mood=moodFor(id);if(!mood)return [];
+ if(id==='brazilian-phonk'){
+   // Strict genre-only shelf: never pad it with unrelated songs and never apply a 25-track cap.
+   return all.filter(s=>{
+     const text=`${s.t||''} ${s.a||''} ${s.al||''} ${s.genre||''} ${s.l||''}`.toLowerCase();
+     const explicitlyBrazilian=s.l==='Brazilian Phonk'||String(s.genre||'').toLowerCase().includes('brazilian-phonk')||/brazilian phonk|funk brasileiro|montagem/.test(text);
+     const clearlyOtherPhonk=/drift phonk|phonk house|japanese phonk|russian phonk|aggressive phonk/.test(text);
+     return explicitlyBrazilian&&!clearlyOtherPhonk;
+   });
+ }
  const scored=all.map((s,i)=>{const text=`${s.t||''} ${s.a||''} ${s.al||''} ${s.l?ln(s.l):''}`.toLowerCase();let score=0;
    for(const word of mood.words)if(text.includes(word.toLowerCase()))score+=word.includes(' ')?3:2;
    if(mood.language&&s.l===mood.language)score+=5;
@@ -46,7 +55,6 @@ function moodSongs(id){
    if(id==='pop'&&['en','ko','ja'].includes(s.l))score+=2;
    return {s,i,score};
  }).sort((a,b)=>b.score-a.score||a.i-b.i);
- // Every mood playlist shows 25 unique tracks whenever the overall catalog has at least 25 songs. Matching tracks rank first; the rest safely fill the list.
  const picked=scored.filter(x=>x.score>0).map(x=>x.s);
  for(const s of scored.map(x=>x.s))if(picked.length<25&&!picked.some(x=>x.id===s.id))picked.push(s);
  return picked.slice(0,Math.min(25,all.length));
@@ -56,7 +64,7 @@ function moodSongs(id){
 const LANGUAGE_CODES=Object.fromEntries(Object.entries(LN).map(([code,name])=>[name.toLowerCase(),code]));
 function normalizeSong(s){
   const raw=String(s.l??s.language??'').trim().toLowerCase();
-  const language=LN[raw]?raw:LANGUAGE_CODES[raw]||({'haryanvi':'har','rajasthani':'raj','filipino':'fil','mandarin':'zh','chinese (mandarin)':'zh'}[raw]||'other');
+  const language=/brazilian phonk/.test(raw)?'Brazilian Phonk':LN[raw]?raw:LANGUAGE_CODES[raw]||({'haryanvi':'har','rajasthani':'raj','filipino':'fil','mandarin':'zh','chinese (mandarin)':'zh'}[raw]||'other');
   return {...s,id:s.id||s.videoId,t:s.t||s.title||'',a:s.a||s.artist||s.channelTitle||'Unknown Artist',al:s.al||s.album||'',l:language,d:s.d||s.addedAt||''};
 }
 async function load(){
@@ -66,14 +74,13 @@ async function load(){
   const items=[...(Array.isArray(catalog)?catalog:[]),...((trending?.items||[]).map(x=>({...x,d:x.d||trending.date||''}))),...(Array.isArray(seed)?seed:[])];
   const m=new Map();
   const officialHindi=/t-series|zee music|sony music india|saregama|tips official|jio studios|yrf|yash raj films|panorama music|times music|aditya music|lahari music|think music|speed records|white hill music|desi melodies|gem tunes|hitz music|universal music india|venus music/i;
-  const charts=/\btop\s*(?:10|20|40|50|100)\b|\b(?:top|best)\s+\d+\s+(?:songs|hits|music)|weekly chart|singles chart|new music friday/i;
+  const charts=/\btop\s*(?:10|20|40|50|100)\b|\b(?:top|best)\s+\d+\s+(?:songs|hits|music)|weekly chart|singles chart|new music friday|trending songs?|songs? of the week|music mix compilation|trending music/i;
   items.map(normalizeSong).forEach(song=>{if(!song.id||m.has(song.id))return;
-    const title=String(song.t||''); if(charts.test(title))return;
-    // Keep the existing catalogue intact; official-label preference is applied below rather than
-    // deleting every Hindi entry when its channel metadata uses an unexpected format.
+    const title=String(song.t||''); const source=String(song.a||''); if(charts.test(title)||/\bgaurav\s+mali\b/i.test(source))return;
+    // Preserve existing valid songs; use official-label metadata as a preference, not a destructive blanket filter.
     song.officialLabel=officialHindi.test(String(song.a||''));
     m.set(song.id,song)});
-  all=[...m.values()].sort((x,y)=>String(y.d||'').localeCompare(String(x.d||'')));
+  all=[...m.values()].sort((x,y)=>(Number(Boolean(y.officialLabel))-Number(Boolean(x.officialLabel)))||String(y.d||'').localeCompare(String(x.d||'')));
   byId={};all.forEach(song=>byId[song.id]=song);
   S.user?next():ob('w');
 }
@@ -90,7 +97,7 @@ function ob(st,m){const o=$('#ob');$('#app').hidden=true;o.hidden=false;let h=''
     ];const a=featured.filter(x=>S.langs.includes(x[1])).map(([n])=>[n,all.filter(s=>s.a.toLowerCase().includes(n.toLowerCase())).slice(0,1)]).map(([n,l])=>[n,l.length?l:[all.find(s=>S.langs.includes(s.l))||all[0]].filter(Boolean)]);const fallback=grp('a',all.filter(s=>S.langs.includes(s.l))).slice(0,18);const picks=a.length?a:fallback;
     h=`<div class="glass box"><h1>Pick your favourite artists</h1><div class="pick">${picks.map(([n,l])=>`<div class="c rd ${S.artists.includes(n)?'on':''}" data-art="${esc(n)}"><img src="${th(l[0].id)}" alt=""><b>${esc(n)}</b></div>`).join('')}</div><button class="pri" data-o="done">Done</button></div>`}
   o.innerHTML=h}
-function next(){!S.langs.length?ob('lang'):!S.artists.length?ob('art'):start()}
+function next(){!S.langs.length?ob('lang'):start()}
 function start(){$('#ob').hidden=true;$('#app').hidden=false;$('#me').textContent=(S.user.n||'G')[0].toUpperCase();render()}
 document.addEventListener('submit',async e=>{if(e.target.id!='af')return;e.preventDefault();
   const f=Object.fromEntries(new FormData(e.target)),h=await H(f.p),u=S.users[f.e];
@@ -99,12 +106,12 @@ document.addEventListener('submit',async e=>{if(e.target.id!='af')return;e.preve
   S.user={e:f.e,n:S.users[f.e].n};save();next()});
 
 // views (all client-side)
-const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button><button data-a="${s.id}" aria-label="Add to playlist">＋</button></div>`;
+const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button><button data-a="${s.id}" aria-label="Add to playlist" title="Add to playlist">＋</button><button data-share="${s.id}" aria-label="Share song" title="Share song">↗</button></div>`;
 const rows=l=>l.length?`<div class="list">${l.map(row).join('')}</div>`:'<p>Nothing here yet.</p>';
-const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small><button data-a="${s.id}" aria-label="Add to playlist">＋ Add</button></div>`;
+const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small><div class="song-actions"><button data-a="${s.id}" aria-label="Add to playlist">＋ Add</button><button data-share="${s.id}" aria-label="Share song" title="Share song">↗ Share</button></div></div>`;
 const gc=(k,n,l,r)=>`<div class="c ${r?'rd':''}" data-g="${k}" data-n="${esc(n)}"><img src="${th(l[0].id)}" loading="lazy" alt=""><b>${esc(n)}</b><small>${l.length} songs</small></div>`;
 const shelf=(t,l,f)=>l.length?`<h2>${t}</h2><div class="shelf">${l.map(f||card).join('')}</div>`:'';
-function render(){let h='';const mine=all.filter(s=>['hi','en','Hindi','English'].includes(s.l)||S.artists.includes(s.a)),hr=new Date().getHours();
+function render(){let h='';const mine=all.filter(s=>['hi','en'].includes(s.l)),hr=new Date().getHours();
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   if(det){const l=det.k=='pl'?(S.pls[det.n]||[]).map(i=>byId[i]).filter(Boolean):det.k=='mood'?moodSongs(det.n):all.filter(s=>s[det.k]==det.n);
     const mood=det.k=='mood'?moodFor(det.n):null;
@@ -132,15 +139,16 @@ function render(){let h='';const mine=all.filter(s=>['hi','en','Hindi','English'
   $('#view').innerHTML=h}
 $('#q').addEventListener('input',()=>{v='search';det=null;render()});
 
-document.addEventListener('click',e=>{const t=e.target.closest('[data-o],[data-lang],[data-art],[data-l],[data-a],[data-g],[data-v],[data-back],[data-pa],[data-p],[data-mood]');if(!t)return;const d=t.dataset;
+document.addEventListener('click',e=>{const t=e.target.closest('[data-o],[data-lang],[data-art],[data-l],[data-a],[data-share],[data-g],[data-v],[data-back],[data-pa],[data-p],[data-mood]');if(!t)return;const d=t.dataset;
   if(d.o=='signup'||d.o=='login')ob('auth',d.o);
   else if(d.o=='guest'){S.user={n:'Guest'};save();next()}
   else if(d.o=='lc'){if(!S.langs.length)return toast('Pick at least one language');save();next()}
-  else if(d.o=='done'){if(!S.artists.length)return toast('Pick at least one artist');save();start()}
+  else if(d.o=='done'){save();start()}
   else if(d.lang){const i=S.langs.indexOf(d.lang);i<0?S.langs.push(d.lang):S.langs.splice(i,1);t.classList.toggle('on')}
   else if(d.art!=null){const i=S.artists.indexOf(d.art);i<0?S.artists.push(d.art):S.artists.splice(i,1);t.classList.toggle('on')}
   else if(d.l){const i=S.liked.indexOf(d.l);i<0?S.liked.push(d.l):S.liked.splice(i,1);save();t.classList.toggle('on')}
   else if(d.a){const n=prompt('Add to playlist (type a name, new or existing):\n'+(Object.keys(S.pls).join(', ')||'No playlists yet'));if(n){S.pls[n]=S.pls[n]||[];if(!S.pls[n].includes(d.a))S.pls[n].push(d.a);save();toast('Added to '+n)}}
+  else if(d.share){showShare(d.share)}
   else if(d.g){det={k:d.g,n:d.n};render()}
   else if(d.mood){det={k:'mood',n:d.mood};render()}
   else if(d.back!=null){det=null;render()}
@@ -148,6 +156,43 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-o],[data-l
   else if(d.pa!=null){const l=[...document.querySelectorAll('.list [data-p]')].map(x=>x.dataset.p);if(l.length)play(l[0],l)}
   else if(d.p)play(d.p,[...(t.closest('.shelf,.list')||document).querySelectorAll('[data-p]')].map(x=>x.dataset.p))});
 $('#me').onclick=()=>{if(confirm('Log out?')){S.user=null;save();yt&&yt.pauseVideo();$('#np').classList.remove('open');$('#mini').hidden=true;ob('w')}};
+
+// Share any song. Native share sheet exposes installed apps supported by the device; direct web links are offered where available.
+function songShareUrl(id){return 'https://youtu.be/'+encodeURIComponent(id)}
+function showShare(id){
+ const song=byId[id]; if(!song)return;
+ document.querySelector('.share-pop')?.remove();
+ const url=songShareUrl(id), message=`${song.t} — ${song.a} ${url}`;
+ const pop=document.createElement('div');pop.className='share-pop glass';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','Share song');
+ pop.innerHTML=`<div class="share-head"><b>Share song</b><button type="button" data-share-close aria-label="Close">✕</button></div>
+ <button type="button" data-share-action="native">📲 More apps…</button>
+ <button type="button" data-share-action="whatsapp">🟢 WhatsApp</button>
+ <button type="button" data-share-action="instagram">📸 Instagram</button>
+ <button type="button" data-share-action="snapchat">👻 Snapchat</button>
+ <button type="button" data-share-action="notes">📝 Notes</button>
+ <button type="button" data-share-action="nearby">📡 Quick Share / AirDrop</button>
+ <button type="button" data-share-action="copy">🔗 Copy link</button>`;
+ document.body.append(pop);
+ const close=()=>pop.remove();
+ pop.addEventListener('click',async ev=>{
+  const b=ev.target.closest('[data-share-action],[data-share-close]');if(!b)return;
+  if(b.hasAttribute('data-share-close'))return close();
+  const action=b.dataset.shareAction;
+  try{
+   if(action==='copy'){
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(url);
+    else {const ta=document.createElement('textarea');ta.value=url;document.body.append(ta);ta.select();document.execCommand('copy');ta.remove()}
+    toast('Song link copied');close();return;
+   }
+   if(action==='whatsapp'){window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank','noopener');return}
+   // Instagram, Snapchat, Notes, Quick Share and AirDrop availability depends on OS/app support;
+   // invoke the device share sheet instead of claiming a direct app integration.
+   if(navigator.share){await navigator.share({title:song.t,text:`${song.t} — ${song.a}`,url});close()}
+   else {if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(url);toast('Native sharing is unavailable here; song link copied instead');close()}
+  }catch(err){if(err?.name!=='AbortError')toast('Could not share. Try Copy link.');}
+ });
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.share-pop')&&!e.target.closest('[data-share]'))document.querySelector('.share-pop')?.remove()});
 
 // player (YouTube IFrame API: no key, no quota)
 const onStateChange=e=>{const p=e.data==1;if(p)errs=0;$('#pp').textContent=$('#mp').textContent=p?'❚❚':'▶';if(e.data==0)step(1,1)};
@@ -174,5 +219,6 @@ $('#sl').onclick=()=>{slI=(slI+1)%4;clearTimeout(slT);const m=[0,15,30,60][slI];
 $('#mini').onclick=()=>$('#np').classList.add('open');$('#cl').onclick=()=>$('#np').classList.remove('open');
 $('#sk').oninput=e=>ready&&yt.seekTo(e.target.value/1000*yt.getDuration(),true);
 $('#vol').oninput=e=>{if(ready&&yt.setVolume)yt.setVolume(Number(e.target.value));};
+$('#add-current').onclick=e=>{e.stopPropagation();if(!cur)return toast('Play a song first');const n=prompt('Add current song to playlist (enter an existing name or a new name):',Object.keys(S.pls)[0]||'My Playlist');if(n&&n.trim()){const name=n.trim();S.pls[name]=S.pls[name]||[];if(!S.pls[name].includes(cur))S.pls[name].push(cur);save();toast('Added to '+name)}};
 setInterval(()=>{if(!ready||!yt.getDuration)return;const d=yt.getDuration()||0,c=yt.getCurrentTime()||0;$('#sk').value=d?c/d*1000:0;$('#tm').textContent=fmt(c)+' / '+fmt(d)},500);
 load();

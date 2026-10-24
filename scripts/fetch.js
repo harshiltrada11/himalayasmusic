@@ -120,7 +120,13 @@ async function collectQuery({ language, query, target, kind, era, publishedAfter
   const candidates = (data.items || []).filter(v => {
     const id = v.id?.videoId;
     const title = decode(v.snippet?.title || '');
-    return id && !ids.has(id) && !BLOCKED.some(re => re.test(title));
+    if (!id || ids.has(id) || BLOCKED.some(re => re.test(title))) return false;
+    if (language === 'Brazilian Phonk') {
+      const genreEvidence = /brazilian phonk|funk brasileiro|montagem|automotivo|mandel[aã]o/i.test(`${title} ${v.snippet?.channelTitle || ''}`);
+      const otherPhonk = /drift phonk|phonk house|japanese phonk|russian phonk|aggressive phonk/i.test(title);
+      return genreEvidence && !otherPhonk;
+    }
+    return true;
   });
   const dm = await videoDetails(candidates.map(v => v.id.videoId));
   for (const v of candidates) {
