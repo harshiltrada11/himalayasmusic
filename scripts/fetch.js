@@ -108,12 +108,12 @@ async function videoDetails(ids) {
   }
   return map;
 }
-async function collectQuery({ language, query, target, kind, era, publishedAfter, songs, ids, keys }) {
+async function collectQuery({ language, query, target, kind, era, publishedAfter, order, songs, ids, keys }) {
   let added = 0;
   if (target <= 0) return 0;
   const params = {
     part: 'snippet', q: query, type: 'video', videoCategoryId: '10',
-    videoEmbeddable: 'true', order: kind === 'new' ? 'date' : 'relevance', maxResults: '50'
+    videoEmbeddable: 'true', order: order || (kind === 'new' ? 'date' : 'relevance'), maxResults: '50'
   };
   if (publishedAfter) params.publishedAfter = publishedAfter;
   const data = await api('search', params, 100);
@@ -137,6 +137,7 @@ async function collectQuery({ language, query, target, kind, era, publishedAfter
       thumbnail: v.snippet?.thumbnails?.high?.url || v.snippet?.thumbnails?.medium?.url || '',
       language, addedAt: new Date().toISOString(),
       catalogType: kind === 'new' ? 'recent-candidate' : 'historical-candidate',
+      ...(language === 'Brazilian Phonk' ? { genre: 'brazilian-phonk' } : {}),
       releaseEra: era || 'recent upload; release date unverified',
       youtubePublishedAt: v.snippet?.publishedAt || null
     });
@@ -214,6 +215,14 @@ async function main() {
       const old = await collectHistorical(language, oldTarget, songs, ids, keys, (day + i) % ERA_BUCKETS.length, queryLanguage);
       report.push(`${language}: recent ${recent}/${recentTarget}, older ${old}/${oldTarget}`);
     }
+    // Brazilian Phonk: 5 popular/relevant tracks from the last five years,
+    // 3 currently trending candidates, and 2 newly uploaded candidates.
+    const phonkAfter = new Date(Date.now() - 7 * 86400000).toISOString();
+    let phonk = 0;
+    phonk += await collectQuery({ language:'Brazilian Phonk', query:'Brazilian phonk funk brasileiro viral hits 2021 2022 2023 2024 2025', target:5, kind:'old', era:'popular candidate from last five years; popularity not independently verified', order:'viewCount', songs, ids, keys });
+    phonk += await collectQuery({ language:'Brazilian Phonk', query:'Brazilian phonk trending viral 2026', target:3, kind:'old', era:'current trending candidate; popularity not independently verified', songs, ids, keys });
+    phonk += await collectQuery({ language:'Brazilian Phonk', query:'new Brazilian phonk funk brasileiro official', target:2, kind:'new', era:'new upload; original release date unverified', publishedAfter:phonkAfter, songs, ids, keys });
+    report.push(`Brazilian Phonk: ${phonk}/10 daily target`);
   } catch (err) {
     if (!(err instanceof QuotaError)) throw err;
     report.push(`Stopped safely: ${err.message}`);
