@@ -74,3 +74,8 @@ input[type=range]{padding:0;height:6px;accent-color:var(--a)}
 .player-top-actions button{font-size:13px;padding:9px 12px;white-space:nowrap}
 #cl{flex:none}
 @media(max-width:420px){.player-top-actions{gap:5px}.player-top-actions button{font-size:12px;padding:8px 9px}}
+
+.np.local-audio #vid{display:none}
+.tabs{overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+@media(min-width:900px){.tabs{width:230px}.main{margin-left:254px}.top{left:254px}}

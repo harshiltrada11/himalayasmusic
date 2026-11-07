@@ -34,3 +34,12 @@ The Mood tab is included in navigation. Mood mixes are generated locally without
 - Brazilian Phonk mood page shows all matching catalogue tracks rather than the standard 25-track mood limit.
 - The player includes a volume slider; playlist-add controls are available on track rows and cards.
 - Daily workflow schedule is set to 00:00 India time (GitHub Actions may start late).
+
+
+## Harshil's Playlist (your uploaded MP3s)
+1. Put your MP3 files in `harshils-playlist/audio/`.
+2. Edit `harshils-playlist/playlist.json` and add one object per song. `file` is relative to `harshils-playlist/`, e.g. `audio/song-name.mp3`. Set `title`, `artist`, and optionally `language` (`hi`, `en`, `gu`, etc.) and `cover` (optional image path).
+3. Commit and push the folder to GitHub. Vercel will deploy it with the site.
+4. Open BeatNest once while online and visit **Harshil's Playlist**. The service worker caches uploaded audio for offline playback on that device. Large playlists may exceed browser/device storage; test on the target phone.
+
+The offline cache is device-specific: each phone/computer must open the playlist online once to cache its audio. Clearing browser/site data removes the cached tracks.

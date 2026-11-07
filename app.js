@@ -3,7 +3,10 @@ let S={user:null,langs:[],artists:[],liked:[],pls:{},users:{},...JSON.parse(L.gl
 if(!S.langs.length&&S.lang)S.langs=[S.lang];
 const save=()=>L.gl=JSON.stringify(S);
 const LN={hi:'Hindi',en:'English',gu:'Gujarati',pa:'Punjabi',mr:'Marathi',ta:'Tamil',te:'Telugu',bn:'Bengali',kn:'Kannada',ml:'Malayalam',bh:'Bhojpuri',har:'Haryanvi',raj:'Rajasthani',ur:'Urdu',ne:'Nepali',es:'Spanish',pt:'Portuguese',fr:'French',de:'German',it:'Italian',ko:'Korean',ja:'Japanese',zh:'Chinese',ar:'Arabic',tr:'Turkish',ru:'Russian',id:'Indonesian',th:'Thai',vi:'Vietnamese',fil:'Filipino',fa:'Persian',pl:'Polish',nl:'Dutch',el:'Greek',sw:'Swahili',other:'Other Languages'};
-let all=[],byId={},queue=[],cur='',v='home',lb='pl',det=null,yt,ready=0,pend='',shuf=0,rep=0,errs=0,slT,slI=0;
+let all=[],byId={},queue=[],cur='',v='home',lb='pl',det=null,yt,ready=0,pend='',shuf=0,rep=0,errs=0,slT,slI=0,localSongs=[];
+const localAudio=()=>$('#local-audio');
+const isLocal=id=>String(id).startsWith('local:');
+const songThumb=s=>s.cover|| (isLocal(s.id)?'icon.svg':th(s.id));
 const H=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
 const th=id=>`https://i.ytimg.com/vi/${id}/mqdefault.jpg`,esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const fmt=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'),ln=c=>LN[c]||String(c).toUpperCase();
@@ -70,13 +73,16 @@ function normalizeSong(s){
 async function load(){
   if(location.protocol=='file:')alert('Open the site from your Vercel link (or a local server). YouTube will not play from a file.');
   const j=async u=>{try{const r=await fetch(u);if(!r.ok)return null;return await r.json()}catch{return null}};
-  const [seed,catalog,trending]=await Promise.all([j('songs.json'),j('catalog.json'),j('/api/trending')]);
-  const items=[...(Array.isArray(catalog)?catalog:[]),...((trending?.items||[]).map(x=>({...x,d:x.d||trending.date||''}))),...(Array.isArray(seed)?seed:[])];
+  const [seed,catalog,trending,playlist]=await Promise.all([j('songs.json'),j('catalog.json'),j('/api/trending'),j('harshils-playlist/playlist.json')]);
+  localSongs=(Array.isArray(playlist)?playlist:[]).filter(x=>x&&x.file).map((x,i)=>({id:'local:'+String(x.id||i+1),t:x.title||'Untitled song',a:x.artist||'Harshil',al:x.album||"Harshil's Playlist",l:x.language||'other',src:'harshils-playlist/'+String(x.file).replace(/^\/+/,''),cover:x.cover||'',local:true}));
+  const items=[...(Array.isArray(catalog)?catalog:[]),...((trending?.items||[]).map(x=>({...x,d:x.d||trending.date||''}))),...(Array.isArray(seed)?seed:[]),...localSongs];
+  const cachePlaylist=()=>{const worker=navigator.serviceWorker?.controller;if(worker)worker.postMessage({type:'CACHE_PLAYLIST',files:localSongs.map(x=>x.src)})};
+  if(navigator.serviceWorker){cachePlaylist();navigator.serviceWorker.ready.then(reg=>{(navigator.serviceWorker.controller||reg.active)?.postMessage({type:'CACHE_PLAYLIST',files:localSongs.map(x=>x.src)})}).catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',cachePlaylist,{once:true})}
   const m=new Map();
   const officialHindi=/t-series|zee music|sony music india|saregama|tips official|jio studios|yrf|yash raj films|panorama music|times music|aditya music|lahari music|think music|speed records|white hill music|desi melodies|gem tunes|hitz music|universal music india|venus music/i;
   const charts=/\btop\s*(?:10|20|40|50|100)\b|\b(?:top|best)\s+\d+\s+(?:songs|hits|music)|weekly chart|singles chart|new music friday|trending songs?|songs? of the week|music mix compilation|trending music/i;
   items.map(normalizeSong).forEach(song=>{if(!song.id||m.has(song.id))return;
-    const title=String(song.t||''); const source=String(song.a||''); if(charts.test(title)||/\bgaurav\s+mali\b/i.test(source))return;
+    const title=String(song.t||''); const source=String(song.a||''); if(charts.test(title)||/\b(?:gaurav\s+mali|prakash\s+jojawar|sagar\s+bairagi|prakash\s+jampur)\b/i.test(source))return;
     // Preserve existing valid songs; use official-label metadata as a preference, not a destructive blanket filter.
     song.officialLabel=officialHindi.test(String(song.a||''));
     m.set(song.id,song)});
@@ -106,9 +112,9 @@ document.addEventListener('submit',async e=>{if(e.target.id!='af')return;e.preve
   S.user={e:f.e,n:S.users[f.e].n};save();next()});
 
 // views (all client-side)
-const row=s=>`<div class="row" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${ln(s.l)}</small></div><button data-l="${s.id}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button></div>`;
+const row=s=>`<div class="row" data-p="${esc(s.id)}"><img src="${esc(songThumb(s))}" loading="lazy" alt=""><div><b>${esc(s.t)}</b><small>${esc(s.a)} · ${s.local?'Your uploaded song':ln(s.l)}</small></div><button data-l="${esc(s.id)}" class="${S.liked.includes(s.id)?'on':''}" aria-label="Like">♥</button></div>`;
 const rows=l=>l.length?`<div class="list">${l.map(row).join('')}</div>`:'<p>Nothing here yet.</p>';
-const card=s=>`<div class="c" data-p="${s.id}"><img src="${th(s.id)}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small></div>`;
+const card=s=>`<div class="c" data-p="${esc(s.id)}"><img src="${esc(songThumb(s))}" loading="lazy" alt=""><b>${esc(s.t)}</b><small>${esc(s.a)}</small></div>`;
 const gc=(k,n,l,r)=>`<div class="c ${r?'rd':''}" data-g="${k}" data-n="${esc(n)}"><img src="${th(l[0].id)}" loading="lazy" alt=""><b>${esc(n)}</b><small>${l.length} songs</small></div>`;
 const shelf=(t,l,f)=>l.length?`<h2>${t}</h2><div class="shelf">${l.map(f||card).join('')}</div>`:'';
 function render(){let h='';const mine=all.filter(s=>['hi','en'].includes(s.l)),hr=new Date().getHours();
@@ -129,6 +135,7 @@ function render(){let h='';const mine=all.filter(s=>['hi','en'].includes(s.l)),h
       +shelf('Popular Artists',grp('a',all).slice(0,15),([n,l])=>gc('a',n,l,1))
       +shelf('Albums',grp('al',all).filter(x=>x[0]&&x[1].length>1).slice(0,15),([n,l])=>gc('al',n,l));
     if(!all.length)h+='<p>No songs loaded. Check that songs.json and catalog.json are available on the deployed site.</p>'}
+  else if(v=='harshil'){h=`<h1>Harshil's Playlist</h1><p class="mood-intro">Songs uploaded by Harshil. Open this playlist once while online so the songs can be saved for offline listening on this device.</p><button class="pri" data-pa>▶ Play all</button>${rows(localSongs)}`;if(!localSongs.length)h+='<p>No songs uploaded yet. Add your MP3 files to the harshils-playlist/audio folder and update playlist.json.</p>'}
   else if(v=='search'){const q=$('#q').value.toLowerCase().trim();
     h=q?`<h2>Songs</h2>`+rows(all.filter(s=>(s.t+' '+s.a+' '+s.al).toLowerCase().includes(q)).slice(0,60))+shelf('Artists',grp('a',all.filter(s=>s.a.toLowerCase().includes(q))).slice(0,10),([n,l])=>gc('a',n,l,1))
       :`<h1>Browse all</h1><div class="tiles">${Object.keys(LN).map(k=>`<div class="tile" data-g="l" data-n="${k}">${LN[k]}</div>`).join('')}</div>`}
@@ -194,33 +201,27 @@ function showShare(id){
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.share-pop')&&!e.target.closest('[data-share]'))document.querySelector('.share-pop')?.remove()});
 
-// player (YouTube IFrame API: no key, no quota)
+// Player supports YouTube discovery tracks and uploaded local MP3s.
 const onStateChange=e=>{const p=e.data==1;if(p)errs=0;$('#pp').textContent=$('#mp').textContent=p?'❚❚':'▶';if(e.data==0)step(1,1)};
 const onError=()=>{if(++errs>4)return toast('Songs are not playing. Open the Vercel link, not a file.');toast("This song can't play here, skipping");setTimeout(()=>step(1),900)};
-function play(id,q){if(q)queue=q;const s=byId[id];if(!s)return;cur=id;
-  $('#nt').textContent=$('#mt').textContent=s.t;$('#na').textContent=$('#ma').textContent=s.a;$('#mi').src=th(id);$('#yl').href='https://youtu.be/'+id;$('#mini').hidden=false;
-  if(!yt){if(!window.YT||!YT.Player)return toast('Player is loading, tap the song again');
-    const f=document.createElement('iframe');f.allow='autoplay; encrypted-media; picture-in-picture';
-    f.src=`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1&playsinline=1&controls=0&rel=0&origin=${encodeURIComponent(location.origin)}`;$('#vid').append(f);
-    yt=new YT.Player(f,{events:{onReady(){ready=1;yt.setVolume(Number($('#vol')?.value||70));if(pend&&pend!=id){yt.loadVideoById(pend)}pend=''},onStateChange,onError}});$('#np').classList.add('open')}
-  else if(ready)yt.loadVideoById(id);else pend=id;
-  if('mediaSession'in navigator){const M=navigator.mediaSession;M.metadata=new MediaMetadata({title:s.t,artist:s.a,artwork:[{src:th(id)}]});
-    M.setActionHandler('previoustrack',()=>step(-1));M.setActionHandler('nexttrack',()=>step(1));M.setActionHandler('play',tog);M.setActionHandler('pause',tog)}}
-function step(d,auto){if(!queue.length)return;if(auto&&rep==2){yt.seekTo(0);return yt.playVideo()}
-  let i=queue.indexOf(cur);if(shuf)i=Math.floor(Math.random()*queue.length);else{i+=d;if(i>=queue.length){if(auto&&!rep)return;i=0}if(i<0)i=queue.length-1}
-  play(queue[i])}
-const tog=()=>ready&&(yt.getPlayerState()==1?yt.pauseVideo():yt.playVideo());
+function play(id,q){if(q)queue=q;const s=byId[id];if(!s)return;cur=id;const local=!!s.local;
+  $('#nt').textContent=$('#mt').textContent=s.t;$('#na').textContent=$('#ma').textContent=s.a;$('#mi').src=songThumb(s);$('#mini').hidden=false;$('#np').classList.toggle('local-audio',local);
+  if(local){if(yt&&ready)yt.pauseVideo();const a=localAudio();a.src=s.src;a.volume=Number($('#vol')?.value||70)/100;a.play().catch(()=>toast('Tap Play again. If offline, open the playlist once while online first.'));$('#yl').href=s.src;$('#np').classList.add('open');$('#pp').textContent=$('#mp').textContent='❚❚';}
+  else {localAudio().pause();$('#yl').href='https://youtu.be/'+id;if(!yt){if(!window.YT||!YT.Player)return toast('Player is loading, tap the song again');const f=document.createElement('iframe');f.allow='autoplay; encrypted-media; picture-in-picture';f.src=`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1&playsinline=1&controls=0&rel=0&origin=${encodeURIComponent(location.origin)}`;$('#vid').append(f);yt=new YT.Player(f,{events:{onReady(){ready=1;yt.setVolume(Number($('#vol')?.value||70));if(pend&&pend!=id)yt.loadVideoById(pend);pend=''},onStateChange,onError}});$('#np').classList.add('open')}else if(ready)yt.loadVideoById(id);else pend=id;}
+  if('mediaSession'in navigator){const M=navigator.mediaSession;M.metadata=new MediaMetadata({title:s.t,artist:s.a,artwork:[{src:songThumb(s)}]});M.setActionHandler('previoustrack',()=>step(-1));M.setActionHandler('nexttrack',()=>step(1));M.setActionHandler('play',tog);M.setActionHandler('pause',tog)}}
+function step(d,auto){if(!queue.length)return;if(auto&&rep==2){if(isLocal(cur)){localAudio().currentTime=0;localAudio().play()}else if(yt){yt.seekTo(0);yt.playVideo()}return}let i=queue.indexOf(cur);if(shuf)i=Math.floor(Math.random()*queue.length);else{i+=d;if(i>=queue.length){if(auto&&!rep)return;i=0}if(i<0)i=queue.length-1}play(queue[i])}
+const tog=()=>{if(isLocal(cur)){const a=localAudio();if(a.paused)a.play().catch(()=>{});else a.pause();$('#pp').textContent=$('#mp').textContent=a.paused?'▶':'❚❚';return}if(ready)yt.getPlayerState()==1?yt.pauseVideo():yt.playVideo()};
+localAudio().addEventListener('play',()=>$('#pp').textContent=$('#mp').textContent='❚❚');localAudio().addEventListener('pause',()=>$('#pp').textContent=$('#mp').textContent='▶');localAudio().addEventListener('ended',()=>step(1,1));
 $('#pp').onclick=tog;$('#mp').onclick=e=>{e.stopPropagation();tog()};
 $('#nx').onclick=$('#mx').onclick=e=>{e.stopPropagation();step(1)};$('#pv').onclick=$('#mv').onclick=e=>{e.stopPropagation();step(-1)};
 $('#sh').onclick=e=>{shuf=!shuf;e.currentTarget.classList.toggle('on',shuf);toast('Shuffle '+(shuf?'on':'off'))};
 $('#rp').onclick=e=>{rep=(rep+1)%3;const b=e.currentTarget;b.textContent=rep==2?'↻1':'↻';b.classList.toggle('on',rep>0);toast(['Repeat off','Repeat all','Repeat this song'][rep])};
-$('#sl').onclick=()=>{slI=(slI+1)%4;clearTimeout(slT);const m=[0,15,30,60][slI];$('#sl').textContent='⏾ Sleep timer: '+(m?m+' min':'Off');
-  if(m)slT=setTimeout(()=>{yt&&yt.pauseVideo();slI=0;$('#sl').textContent='⏾ Sleep timer: Off';toast('Sleep timer: music stopped')},m*6e4)};
+$('#sl').onclick=()=>{slI=(slI+1)%4;clearTimeout(slT);const m=[0,15,30,60][slI];$('#sl').textContent='⏾ Sleep timer: '+(m?m+' min':'Off');if(m)slT=setTimeout(()=>{localAudio().pause();yt&&yt.pauseVideo();slI=0;$('#sl').textContent='⏾ Sleep timer: Off';toast('Sleep timer: music stopped')},m*6e4)};
 $('#mini').onclick=()=>$('#np').classList.add('open');$('#cl').onclick=()=>$('#np').classList.remove('open');
-$('#sk').oninput=e=>ready&&yt.seekTo(e.target.value/1000*yt.getDuration(),true);
-$('#vol').oninput=e=>{if(ready&&yt.setVolume)yt.setVolume(Number(e.target.value));};
+$('#sk').oninput=e=>{if(isLocal(cur)){const a=localAudio();if(a.duration)a.currentTime=e.target.value/1000*a.duration}else if(ready)yt.seekTo(e.target.value/1000*yt.getDuration(),true)};
+$('#vol').oninput=e=>{if(isLocal(cur))localAudio().volume=Number(e.target.value)/100;else if(ready&&yt.setVolume)yt.setVolume(Number(e.target.value));};
 $('#share-current').onclick=e=>{e.stopPropagation();if(!cur)return toast('Play a song first');showShare(cur)};
 
 $('#add-current').onclick=e=>{e.stopPropagation();if(!cur)return toast('Play a song first');const n=prompt('Add current song to playlist (enter an existing name or a new name):',Object.keys(S.pls)[0]||'My Playlist');if(n&&n.trim()){const name=n.trim();S.pls[name]=S.pls[name]||[];if(!S.pls[name].includes(cur))S.pls[name].push(cur);save();toast('Added to '+name)}};
-setInterval(()=>{if(!ready||!yt.getDuration)return;const d=yt.getDuration()||0,c=yt.getCurrentTime()||0;$('#sk').value=d?c/d*1000:0;$('#tm').textContent=fmt(c)+' / '+fmt(d)},500);
+setInterval(()=>{let d=0,c=0;if(isLocal(cur)){d=localAudio().duration||0;c=localAudio().currentTime||0}else if(ready&&yt?.getDuration){d=yt.getDuration()||0;c=yt.getCurrentTime()||0}else return;$('#sk').value=d?c/d*1000:0;$('#tm').textContent=fmt(c)+' / '+fmt(d)},500);
 load();

@@ -9,6 +9,7 @@ const FILE = path.join(__dirname, '..', 'catalog.json');
 const BUDGET = Math.min(Number(process.env.QUOTA_BUDGET || 8000), 9000);
 const MIN_SECONDS = 90, MAX_SECONDS = 600;
 const BLOCKED = [
+  /\b(?:prakash\s+jojawar|sagar\s+bairagi|prakash\s+jampur|gaurav\s+mali)\b/i,
   /\bbass[\s-]*boosted\b/i, /\b8d audio\b/i, /\bnightcore\b/i,
   /\bslowed\s*(?:\+|&|and)\s*reverb\b/i, /\bsped[\s-]*up\b/i,
   /\btiktok remix\b/i, /\bdj remix\b/i, /\bfull dj song\b/i,
@@ -95,7 +96,7 @@ async function main() {
       for (const q of (ERA_QUERIES[cfg.language]||[])) {
         if (added>=cfg.target) break;
         const data=await api('search',{part:'snippet',q,type:'video',videoCategoryId:'10',videoEmbeddable:'true',order:'relevance',maxResults:50},100);
-        const candidates=(data.items||[]).filter(x=>x.id?.videoId && !ids.has(x.id.videoId) && !BLOCKED.some(re=>re.test(decode(x.snippet?.title||''))));
+        const candidates=(data.items||[]).filter(x=>x.id?.videoId && !ids.has(x.id.videoId) && !BLOCKED.some(re=>re.test(decode(x.snippet?.title||''))) && !/\b(?:prakash\s+jojawar|sagar\s+bairagi|prakash\s+jampur|gaurav\s+mali)\b/i.test(decode(x.snippet?.channelTitle||'')));
         if (!candidates.length) continue;
         const dm=await durations(candidates.map(x=>x.id.videoId));
         for (const x of candidates) {
